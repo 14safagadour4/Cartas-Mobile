@@ -1,0 +1,36 @@
+name: cartas
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  go_router: ^14.2.0
+  flutter_lints: ^6.0.0
+  provider: ^6.1.1
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.2.1
+  http: ^1.2.0
+  shared_preferences: ^2.2.3
+  file_picker: ^8.1.4
+
+
+  # Autres dépendances si nécessaire
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/plantes/
