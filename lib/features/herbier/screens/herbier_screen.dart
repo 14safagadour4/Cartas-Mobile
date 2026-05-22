@@ -101,7 +101,7 @@ class _HerbierScreenState extends State<HerbierScreen> {
                       isSelected: _selectedCategory == cat,
                       onTap: () => setState(() => _selectedCategory = cat),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

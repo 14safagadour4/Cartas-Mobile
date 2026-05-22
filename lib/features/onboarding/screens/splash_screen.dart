@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/fcm_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,8 +23,39 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _scaleAnim = Tween<double>(begin: 0.5, end: 1).animate(CurvedAnimation(parent: _controller, curve: const Interval(0, 0.6, curve: Curves.elasticOut)));
     _controller.forward();
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) context.go('/onboarding');
+      if (mounted) _checkAutoLogin();
     });
+  }
+
+  Future<void> _checkAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+    final role = prefs.getString('userRole');
+    final userId = prefs.getString('userId');
+
+    if (token != null && token.isNotEmpty && role != null) {
+      // Initialiser FCM
+      if (userId != null) {
+        try {
+          await FCMNotificationService().init(userId);
+        } catch (e) {
+          print('Erreur FCM auto-login: $e');
+        }
+      }
+
+      if (!mounted) return;
+      // Redirection automatique selon le rôle
+      if (role == 'SPECIALIST') {
+        context.go('/specialist-home');
+      } else if (role == 'ART_THERAPIST') {
+        context.go('/therapist-home');
+      } else {
+        context.go('/home');
+      }
+    } else {
+      if (!mounted) return;
+      context.go('/onboarding');
+    }
   }
 
   @override

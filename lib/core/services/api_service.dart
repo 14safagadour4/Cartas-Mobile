@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Use ngrok public URL for stable connectivity across networks
-  static const String baseUrl = 'https://randee-nonlicentious-seducingly.ngrok-free.dev/api';
+  // Utilisation de 10.0.2.2 pour pointer vers le localhost de l'ordinateur depuis l'émulateur Android
+  static const String baseUrl = 'http://10.0.2.2:8080/api';
 
   static Future<http.Response> post(
       String endpoint, Map<String, dynamic> body) async {
@@ -33,6 +33,22 @@ class ApiService {
         'ngrok-skip-browser-warning': 'true',
         if (token != null) 'Authorization': 'Bearer $token',
       },
+    );
+  }
+
+  static Future<http.Response> patch(
+      String endpoint, Map<String, dynamic> body) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    return http.patch(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
     );
   }
 

@@ -18,7 +18,7 @@ class _ActorChoiceScreenState extends State<ActorChoiceScreen> {
       'title': 'Utilisatrice',
       'subtitle': 'Découvrez les plantes et créez vos remèdes',
       'icon': Icons.eco,
-      'color': AppColors.primaryGreen,
+      'color': const Color(0xFFE55E99), // Strong Pink from palette
       'role': 'utilisatrice',
     },
     {
@@ -121,7 +121,7 @@ class _ActorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color cardColor = (actor['color'] as Color?) ?? Colors.green;
+    final Color cardColor = (actor['color'] as Color?) ?? const Color.fromARGB(255, 221, 119, 216);
 
     return GestureDetector(
       onTap: onTap,

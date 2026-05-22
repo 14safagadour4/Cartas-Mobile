@@ -84,7 +84,7 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Phyto Lab',
                   subtitle: 'Laboratoire virtuel',
                   color: AppColors.lavande,
-                  onTap: () => context.push('/lab'),
+                  onTap: () => context.push('/phyto-lab'),
                 ),
                 _buildDrawerItem(
                   context,
@@ -108,7 +108,9 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Apprendre',
                   subtitle: 'Modules éducatifs',
                   color: AppColors.sageTendre,
-                  onTap: () {},
+                  onTap: () {
+                    context.push('/learning');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -124,7 +126,7 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Consultation',
                   subtitle: 'Spécialistes santé',
                   color: AppColors.roseMid,
-                  onTap: () {},
+                  onTap: () => context.push('/consultation'),
                 ),
                 _buildDrawerItem(
                   context,

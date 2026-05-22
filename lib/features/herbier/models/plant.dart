@@ -1,40 +1,18 @@
 // Plant categories related to their main therapeutic use
 
-enum PlantCategory { calmant, digestion, immunite, energie, peau, sommeil }
+enum PlantCategory {
+  calmant('🌸', 'Calm.\nStress', 'cat_calmant'),
+  digestion('🍃', 'Digest.', 'cat_digestion'),
+  immunite('🛡️', 'Immun.', 'cat_immunite'),
+  energie('⚡', 'Énergie', 'cat_energie'),
+  peau('🧴', 'Beauté', 'cat_peau'),
+  sommeil('😴', 'Sommeil', 'cat_sommeil');
 
-extension PlantCategoryExt on PlantCategory {
-  String get label {
-    switch (this) {
-      case PlantCategory.calmant: return 'Calm.\nStress';
-      case PlantCategory.digestion: return 'Digest.';
-      case PlantCategory.immunite: return 'Immun.';
-      case PlantCategory.energie: return 'Énergie';
-      case PlantCategory.peau: return 'Beauté';
-      case PlantCategory.sommeil: return 'Sommeil';
-    }
-  }
+  final String icon;
+  final String label;
+  final String translationKey;
 
-  String get translationKey {
-    switch (this) {
-      case PlantCategory.calmant: return 'cat_calmant';
-      case PlantCategory.digestion: return 'cat_digestion';
-      case PlantCategory.immunite: return 'cat_immunite';
-      case PlantCategory.energie: return 'cat_energie';
-      case PlantCategory.peau: return 'cat_peau';
-      case PlantCategory.sommeil: return 'cat_sommeil';
-    }
-  }
-
-  String get icon {
-    switch (this) {
-      case PlantCategory.calmant: return '🌸';
-      case PlantCategory.digestion: return '🍃';
-      case PlantCategory.immunite: return '🛡️';
-      case PlantCategory.energie: return '⚡';
-      case PlantCategory.peau: return '🧴';
-      case PlantCategory.sommeil: return '😴';
-    }
-  }
+  const PlantCategory(this.icon, this.label, this.translationKey);
 }
 
 class Plant {
