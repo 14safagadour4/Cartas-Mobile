@@ -4,7 +4,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cartas/core/services/auth_service.dart';
+import 'package:cartas/core/services/fcm_notification_service.dart';
 import 'package:file_picker/file_picker.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -56,7 +58,7 @@ class _SignupScreenState extends State<SignupScreen>
 
   Color get _accent => switch (widget.role) {
         'specialiste' => AppColors.sageTendre,
-        'art-therapeute' => AppColors.lavande,
+        'art-therapeute' => const Color.fromARGB(255, 145, 98, 228),
         _ => AppColors.roseVif,
       };
 
@@ -137,8 +139,6 @@ class _SignupScreenState extends State<SignupScreen>
   }
 
   void _submit() async {
-    setState(() => _isLoading = true);
-
     final roleMapping = {
       'specialiste': 'SPECIALIST',
       'art-therapeute': 'ART_THERAPIST',
@@ -155,25 +155,48 @@ class _SignupScreenState extends State<SignupScreen>
       if (role == 'SPECIALIST') 'specialty': _selectedSpecialities.join(', '),
       if (role == 'ART_THERAPIST')
         'artDiscipline': _selectedSpecialities.join(', '),
-      // You can add more fields if needed (phone, bio, etc.)
     };
 
+    setState(() => _isLoading = true);
+
     try {
-      final result =
-          await AuthService.registerMobile(userData, filePath: _pickedFile?.path);
+      final result = await AuthService.registerMobile(userData, filePath: _pickedFile?.path);
 
       if (mounted) {
         setState(() => _isLoading = false);
         if (result['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  result['message'] ?? 'Inscription réussie ! Connectez-vous.'),
-              backgroundColor: AppColors.sageTendre,
-            ),
-          );
-          // Redirect to Login as requested
-          context.goNamed('login', pathParameters: {'role': widget.role});
+          // Sauvegarder les identifiants pour l'auto-login futur
+          if (role == 'SPECIALIST' || role == 'ART_THERAPIST') {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('specialist_savedEmail', _emailCtrl.text.trim());
+            await prefs.setString('specialist_savedPassword', _passwordCtrl.text.trim());
+            
+            // Initialiser FCM immédiatement pour recevoir la notification de validation
+            // On entoure de try-catch pour que l'absence de Google Play Services ne bloque pas l'inscription
+            try {
+              if (result['userId'] != null) {
+                await FCMNotificationService().init(result['userId']).timeout(const Duration(seconds: 5));
+              }
+            } catch (e) {
+              debugPrint("⚠️ Notification Push indisponible : $e");
+            }
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Inscription soumise ! Votre compte est en attente de validation.'),
+                backgroundColor: _accent,
+              ),
+            );
+            context.goNamed('pending-approval', queryParameters: {'role': role});
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Inscription réussie ! Connectez-vous.'),
+                backgroundColor: AppColors.sageTendre,
+              ),
+            );
+            context.goNamed('login', pathParameters: {'role': widget.role});
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -185,6 +208,7 @@ class _SignupScreenState extends State<SignupScreen>
       }
     } catch (e) {
       if (mounted) {
+        print("Erreur d'inscription détaillée: $e");
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -209,37 +233,69 @@ class _SignupScreenState extends State<SignupScreen>
                 radius: 1.5,
                 colors: [
                   switch (widget.role) {
-                    'specialiste' => const Color(0xFF0A1810),
-                    'therapeute' => const Color(0xFF100828),
-                    _ => const Color(0xFF22082A),
+                    'specialiste' => const Color.fromARGB(255, 67, 153, 55),
+                    'therapeute' => const Color.fromARGB(255, 57, 36, 126),
+                    _ => const Color(0xFFFFAFCC), // Mid Pink from palette
                   },
-                  AppColors.darkNight,
+                  const Color(0xFFCDB4DA), // Lilac from palette
                 ],
               ),
             ),
           ),
+          // Ambient liquid/wave orbs
           AnimatedBuilder(
             animation: _orbController,
             builder: (context, _) {
-              final opacity = 0.16 * _orbController.value;
-              return Positioned(
-                top: -40,
-                right: MediaQuery.of(context).size.width * 0.2,
-                child: Container(
-                  width: 280,
-                  height: 280,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _accent.withValues(alpha: opacity),
-                        Colors.transparent,
-                      ],
-                    ),
+              final t = _orbController.value;
+              final size = MediaQuery.of(context).size;
+              final Color waveColor1 = widget.role == 'specialiste' 
+                  ? const Color.fromARGB(255, 67, 153, 55) 
+                  : (widget.role == 'art-therapeute' ? const Color.fromARGB(255, 57, 36, 126) : const Color(0xFFCDB4DA));
+              final Color waveColor2 = widget.role == 'specialiste'
+                  ? const Color.fromARGB(255, 98, 226, 166)
+                  : (widget.role == 'art-therapeute' ? const Color.fromARGB(255, 102, 37, 163) : const Color(0xFFFFAFCC));
+
+              return Stack(
+                children: [
+                  // Large wave 1
+                  Positioned(
+                    top: -100 + (20 * t),
+                    left: -50 + (30 * (1-t)),
+                    child: _buildOrb(450, waveColor1.withOpacity(0.18 + 0.05 * t)),
                   ),
-                ),
+                  // Large wave 2
+                  Positioned(
+                    bottom: -80 - (30 * t),
+                    right: -100 + (40 * t),
+                    child: _buildOrb(400, waveColor2.withOpacity(0.15 + 0.08 * t)),
+                  ),
+                  // Floating reflection
+                  Positioned(
+                    top: size.height * 0.3 + (50 * t),
+                    right: -30 + (20 * (1-t)),
+                    child: _buildOrb(220, _accent.withOpacity(0.12 * t)),
+                  ),
+                ],
               );
             },
+          ),
+
+          // Flora decorations (Mirroring LoginScreen style)
+          const Positioned(
+            top: -10,
+            left: -12,
+            child: Opacity(
+              opacity: 0.12,
+              child: Text('🌿', style: TextStyle(fontSize: 100)),
+            ),
+          ),
+          const Positioned(
+            bottom: 100,
+            right: -8,
+            child: Opacity(
+              opacity: 0.12,
+              child: Text('🌺', style: TextStyle(fontSize: 80)),
+            ),
           ),
           SafeArea(
             child: SingleChildScrollView(
@@ -269,9 +325,9 @@ class _SignupScreenState extends State<SignupScreen>
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1)),
+                                    color: Colors.white.withValues(alpha: 0.15)),
                               ),
                               child: const Icon(Icons.arrow_back_ios_new,
                                   color: Colors.white, size: 15),
@@ -284,7 +340,7 @@ class _SignupScreenState extends State<SignupScreen>
                               color: _accent.withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                  color: _accent.withValues(alpha: 0.22)),
+                                  color: _accent.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -294,7 +350,7 @@ class _SignupScreenState extends State<SignupScreen>
                                 const SizedBox(width: 6),
                                 Text(_roleLabel,
                                     style: AppTextStyles.body(
-                                        10.5, _accent.withValues(alpha: 0.9),
+                                        10.5, _accent.withValues(alpha: 0.95),
                                         weight: FontWeight.w600)),
                               ],
                             ),
@@ -302,9 +358,13 @@ class _SignupScreenState extends State<SignupScreen>
                           const SizedBox(height: 10),
                           Text(
                             'Rejoindre\nCARTAS',
-                            style: AppTextStyles.display(26, Colors.white,
-                                weight: FontWeight
-                                    .w700), // ✅ Mettre false au lieu de null
+                            style: AppTextStyles.display(
+                                26,
+                                widget.role != 'specialiste' &&
+                                        widget.role != 'art-therapeute'
+                                    ? const Color(0xFF764F7E)
+                                    : Colors.white,
+                                weight: FontWeight.w700),
                           ),
                           if (_needsMultiStep) ...[
                             const SizedBox(height: 16),
@@ -798,6 +858,20 @@ class _SignupScreenState extends State<SignupScreen>
                 style: AppTextStyles.body(13, AppColors.textPrimary,
                     weight: FontWeight.w600)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrb(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, Colors.transparent],
+          stops: const [0.2, 1.0],
         ),
       ),
     );

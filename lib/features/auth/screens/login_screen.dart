@@ -2,9 +2,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:cartas/core/services/auth_service.dart';
+import 'package:cartas/core/services/fcm_notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final String role;
@@ -14,11 +16,12 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
-  final _emailCtrl    = TextEditingController();
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
+  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _obscurePass   = true;
-  bool _isLoading     = false;
+  bool _obscurePass = true;
+  bool _isLoading = false;
 
   late AnimationController _orbController;
 
@@ -33,6 +36,35 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       vsync: this,
       duration: const Duration(seconds: 5),
     )..repeat(reverse: true);
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Mapper le rôle de l'UI vers les clés de stockage
+    String rolePrefix = 'user';
+    if (widget.role.toLowerCase().contains('specialiste')) {
+      rolePrefix = 'specialist';
+    } else if (widget.role.toLowerCase().contains('art-therapeute')) {
+      rolePrefix = 'art_therapist';
+    }
+
+    final savedEmail = prefs.getString('${rolePrefix}_savedEmail');
+    final savedPassword = prefs.getString('${rolePrefix}_savedPassword');
+    
+    if (savedEmail != null && savedEmail.isNotEmpty) {
+      _emailCtrl.text = savedEmail;
+    } else {
+      _emailCtrl.clear();
+    }
+    
+    if (savedPassword != null && savedPassword.isNotEmpty) {
+      _passwordCtrl.text = savedPassword;
+    } else {
+      _passwordCtrl.clear();
+    }
+    
+    if (mounted) setState(() {});
   }
 
   @override
@@ -52,37 +84,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           accentColor: AppColors.sageTendre,
           gradient: AppColors.sageGradient,
           bgColors: [
-            const Color(0xFF0A0510),
-            const Color(0xFF0A1810),
-            const Color(0xFF1B4332),
-            const Color(0xFF52B788),
+            const Color.fromARGB(255, 62, 43, 114),
+            const Color.fromARGB(255, 29, 80, 51),
+            const Color.fromARGB(255, 67, 153, 55),
+            const Color.fromARGB(255, 98, 226, 166),
           ],
         );
       case 'art-therapeute':
         return _RoleConfig(
           emoji: '🎨',
           label: 'Art-Thérapeute',
-          accentColor: AppColors.lavande,
+          accentColor: const Color.fromARGB(255, 147, 98, 233),
           gradient: AppColors.lavandeGradient,
           bgColors: [
-            const Color(0xFF0A0510),
-            const Color(0xFF100828),
-            const Color(0xFF3A1260),
-            const Color(0xFF8040C0),
+            const Color.fromARGB(255, 48, 24, 77),
+            const Color.fromARGB(255, 50, 26, 121),
+            const Color.fromARGB(255, 102, 37, 163),
+            const Color.fromARGB(255, 152, 88, 216),
           ],
-
         );
       default: // utilisatrice
         return _RoleConfig(
           emoji: '🌸',
           label: 'Utilisatrice',
-          accentColor: AppColors.roseVif,
+          accentColor: const Color(0xFFE55E99), // Strong Pink from palette
           gradient: AppColors.roseGradient,
           bgColors: [
-            const Color(0xFF0A0510),
-            const Color(0xFF22082A),
-            const Color(0xFF7D3058),
-            const Color(0xFFD4709A),
+            const Color(0xFFCDB4DA), // Lilac (Outer)
+            const Color(0xFFFFAFCC), // Mid Pink (Center)
+            const Color(0xFFFFC8DC), // Light Pink
+            const Color(0xFFEBB9DF), // Pastel Pink
           ],
         );
     }
@@ -100,20 +131,48 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
 
     setState(() => _isLoading = true);
-    
+
     final result = await AuthService.login(email, password);
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (result['success']) {
-        context.goNamed('home');
+        final role = result['data']['user']['role'];
+        final userId = result['data']['user']['id'].toString();
+        
+        // Initialiser les notifications FCM pour cet utilisateur
+        try {
+          await FCMNotificationService().init(userId);
+        } catch (e) {
+          print('Erreur initialisation FCM: $e');
+        }
+
+        if (role == 'SPECIALIST') {
+          context.goNamed('specialist-home');
+        } else if (role == 'ART_THERAPIST') {
+          context.goNamed('therapist-home');
+        } else {
+          context.goNamed('home');
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Email ou mot de passe incorrect'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        final message = result['message'] ?? '';
+
+        // Redirection vers la page d'attente si le compte n'est pas encore validé
+        if (message.contains('en attente de validation')) {
+          final roleMapped =
+              widget.role == 'specialiste' ? 'SPECIALIST' : 'ART_THERAPIST';
+          context.goNamed('pending-approval',
+              queryParameters: {'role': roleMapped});
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message.isNotEmpty
+                  ? message
+                  : 'Email ou mot de passe incorrect'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
       }
     }
   }
@@ -138,49 +197,37 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ),
           ),
 
-          // Ambient orbs
+          // Ambient liquid/wave orbs
           AnimatedBuilder(
             animation: _orbController,
             builder: (context, _) {
               final t = _orbController.value;
+              final size = MediaQuery.of(context).size;
               return Stack(
                 children: [
-                  // Top pink orb
+                   // Large wave 1 (Lilac)
                   Positioned(
-                    top: -60,
-                    left: MediaQuery.of(context).size.width * 0.15,
-                    child: Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            _config.accentColor.withOpacity(0.18 - t * 0.08),
-                            Colors.transparent,
-                          ],
-                          stops: const [0, 0.7],
-                        ),
-                      ),
-                    ),
+                    top: -100 + (20 * t),
+                    left: -50 + (30 * (1-t)),
+                    child: _buildOrb(450, _config.bgColors[0].withOpacity(0.18 + 0.05 * t)),
                   ),
-                  // Gold orb bottom
+                   // Large wave 2 (Pink)
                   Positioned(
-                    bottom: 80,
-                    right: -20,
-                    child: Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.gold.withOpacity(0.08 * t),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
+                    bottom: -80 - (30 * t),
+                    right: -100 + (40 * t),
+                    child: _buildOrb(400, _config.bgColors[1].withOpacity(0.15 + 0.08 * t)),
+                  ),
+                  // Floating reflection 1
+                  Positioned(
+                    top: size.height * 0.3 + (50 * t),
+                    right: -30 + (20 * (1-t)),
+                    child: _buildOrb(220, _config.bgColors[3].withOpacity(0.12 * t)),
+                  ),
+                  // Floating reflection 2
+                  Positioned(
+                    bottom: size.height * 0.2 - (40 * t),
+                    left: -20 + (10 * t),
+                    child: _buildOrb(180, AppColors.gold.withOpacity(0.06 * (1-t))),
                   ),
                 ],
               );
@@ -192,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             top: -10,
             left: -12,
             child: Opacity(
-              opacity: 0.04,
+              opacity: 0.12, // Increased visibility
               child: const Text('🌿', style: TextStyle(fontSize: 100)),
             ),
           ),
@@ -200,10 +247,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             bottom: 100,
             right: -8,
             child: Opacity(
-              opacity: 0.04,
+              opacity: 0.12, // Increased visibility
               child: const Text('🌺', style: TextStyle(fontSize: 80)),
             ),
-
           ),
 
           // Main scrollable content
@@ -281,9 +327,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ),
                               ],
                             ),
-                          )
-                              .animate()
-                              .fadeIn(duration: 500.ms),
+                          ).animate().fadeIn(duration: 500.ms),
 
                           const SizedBox(height: 13),
 
@@ -292,7 +336,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             text: TextSpan(
                               style: AppTextStyles.modalTitle,
                               children: [
-                                const TextSpan(text: 'Bon retour\nparmi '),
+                                TextSpan(
+                                  text: 'Bon retour\nparmi ',
+                                  style: TextStyle(
+                                    color: widget.role == 'utilisatrice'
+                                        ? const Color(0xFF764F7E) // Darker Purple for contrast
+                                        : Colors.white,
+                                  ),
+                                ),
                                 TextSpan(
                                   text: 'nous',
                                   style: AppTextStyles.modalTitle?.copyWith(
@@ -357,13 +408,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   controller: _emailCtrl,
                                   hint: 'votre@email.tn',
                                   keyboardType: TextInputType.emailAddress,
-                                ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
+                                )
+                                    .animate()
+                                    .fadeIn(delay: 200.ms, duration: 500.ms),
 
                                 const SizedBox(height: 16),
 
                                 // Password field
                                 _buildPasswordField()
-                                    .animate().fadeIn(delay: 280.ms, duration: 500.ms),
+                                    .animate()
+                                    .fadeIn(delay: 280.ms, duration: 500.ms),
 
                                 const SizedBox(height: 8),
 
@@ -373,7 +427,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   child: Text(
                                     'Mot de passe oublié ?',
                                     style: AppTextStyles.body(
-                                      11.5, AppColors.roseVif,
+                                      11.5,
+                                      AppColors.roseVif,
                                       weight: FontWeight.w600,
                                     ),
                                   ),
@@ -383,7 +438,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
                                 // CTA
                                 _buildCTAButton()
-                                    .animate().fadeIn(delay: 350.ms, duration: 500.ms),
+                                    .animate()
+                                    .fadeIn(delay: 350.ms, duration: 500.ms),
 
                                 const SizedBox(height: 20),
 
@@ -394,7 +450,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
                                 // Google
                                 _buildGoogleButton()
-                                    .animate().fadeIn(delay: 450.ms, duration: 500.ms),
+                                    .animate()
+                                    .fadeIn(delay: 450.ms, duration: 500.ms),
 
                                 const SizedBox(height: 16),
 
@@ -412,7 +469,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       child: Text(
                                         'S\'inscrire →',
                                         style: AppTextStyles.body(
-                                          12, AppColors.rose,
+                                          12,
+                                          AppColors.rose,
                                           weight: FontWeight.w700,
                                         ),
                                       ),
@@ -466,7 +524,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 child: Text(
                   'Connexion',
                   style: AppTextStyles.body(
-                    12, AppColors.rose,
+                    12,
+                    AppColors.rose,
                     weight: FontWeight.w600,
                   ),
                 ),
@@ -485,7 +544,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   child: Text(
                     'Inscription',
                     style: AppTextStyles.body(
-                      12, AppColors.textMuted,
+                      12,
+                      AppColors.textMuted,
                       weight: FontWeight.w600,
                     ),
                   ),
@@ -514,7 +574,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppColors.rose.withOpacity(0.1), width: 1.5),
+            border:
+                Border.all(color: AppColors.rose.withOpacity(0.1), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: AppColors.rose.withOpacity(0.04),
@@ -561,7 +622,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppColors.rose.withOpacity(0.1), width: 1.5),
+            border:
+                Border.all(color: AppColors.rose.withOpacity(0.1), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: AppColors.rose.withOpacity(0.04),
@@ -596,7 +658,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 child: Padding(
                   padding: const EdgeInsets.only(right: 14),
                   child: Icon(
-                    _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscurePass
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     size: 18,
                     color: AppColors.textMuted,
                   ),
@@ -633,9 +697,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         child: Center(
           child: _isLoading
               ? const SizedBox(
-            width: 20, height: 20,
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
+                )
               : Text('Se connecter →', style: AppTextStyles.btnText),
         ),
       ),
@@ -645,14 +711,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: AppColors.rose.withOpacity(0.1), thickness: 1)),
+        Expanded(
+            child:
+                Divider(color: AppColors.rose.withOpacity(0.1), thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text('ou continuer avec',
-              style: AppTextStyles.body(10, AppColors.textDim, weight: FontWeight.w500)
+              style: AppTextStyles.body(10, AppColors.textDim,
+                      weight: FontWeight.w500)
                   .copyWith(letterSpacing: 0.5)),
         ),
-        Expanded(child: Divider(color: AppColors.rose.withOpacity(0.1), thickness: 1)),
+        Expanded(
+            child:
+                Divider(color: AppColors.rose.withOpacity(0.1), thickness: 1)),
       ],
     );
   }
@@ -666,7 +737,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: AppColors.rose.withOpacity(0.12), width: 1.5),
+          border:
+              Border.all(color: AppColors.rose.withOpacity(0.12), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: AppColors.rose.withOpacity(0.05),
@@ -680,17 +752,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           children: [
             // Google logo SVG as text (use proper SVG in production)
             Container(
-              width: 20, height: 20,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4285F4)),
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: Color(0xFF4285F4)),
               child: const Center(
-                child: Text('G', style: TextStyle(
-                    color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                child: Text('G',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 10),
             Text(
               'Continuer avec Google',
-              style: AppTextStyles.body(13, AppColors.textPrimary, weight: FontWeight.w600),
+              style: AppTextStyles.body(13, AppColors.textPrimary,
+                  weight: FontWeight.w600),
             ),
           ],
         ),
@@ -698,6 +776,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 }
+
+  Widget _buildOrb(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, Colors.transparent],
+          stops: const [0.2, 1.0],
+        ),
+      ),
+    );
+  }
+
 
 class _RoleConfig {
   final String emoji;

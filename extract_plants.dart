@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'lib/features/herbier/data/plants_data.dart';
-import 'lib/features/herbier/models/plant.dart';
 
 void main() {
   final List<Map<String, dynamic>> jsonList = plantsData.map((plant) {

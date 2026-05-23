@@ -88,7 +88,7 @@ class PlantDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   // Bienfaits
                   _buildSectionTitle('Bienfaits & Propriétés'),
-                  ...plant.benefits.map((b) => _buildBulletPoint(b)).toList(),
+                  ...plant.benefits.map((b) => _buildBulletPoint(b)),
 
                   const SizedBox(height: 24),
                   // Utilisation
