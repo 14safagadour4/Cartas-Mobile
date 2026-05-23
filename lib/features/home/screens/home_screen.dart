@@ -4,16 +4,12 @@ import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cartas/core/services/auth_service.dart';
 
 import '../widgets/module_drawer.dart';
 import '../widgets/plant_card.dart';
 import '../widgets/quick_action_circle.dart';
 import '../widgets/home_bottom_nav_bar.dart';
-import '../../notifications/widgets/notification_badge.dart';
-import 'package:provider/provider.dart';
-import '../../learning/providers/learning_provider.dart';
-
+import '../../profile/screens/profile_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -26,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   bool _isSearchOpen = false;
   String _firstName = '...';
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -44,62 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _handleSearch(String query) {
-    if (query.trim().isEmpty) return;
-    
-    final lowerQuery = query.toLowerCase().trim();
-    
-    // 1. Redirections vers les services rapides
-    if (lowerQuery.contains('consult') || lowerQuery.contains('rdv') || lowerQuery.contains('medecin')) {
-      context.push('/consultation');
-      return;
-    }
-    if (lowerQuery.contains('chat') || lowerQuery.contains('ia') || lowerQuery.contains('tawhida')) {
-      context.push('/chat');
-      return;
-    }
-    if (lowerQuery.contains('lab') || lowerQuery.contains('phyto')) {
-      context.push('/phyto-lab');
-      return;
-    }
-    if (lowerQuery.contains('art') || lowerQuery.contains('rachma') || lowerQuery.contains('dessin')) {
-      context.push('/arttherapy');
-      return;
-    }
-
-    // 2. Recherche dans les Modules d'Apprentissage
-    final provider = context.read<LearningProvider>();
-    final modules = provider.modules;
-    for (var module in modules) {
-      if (module.title.toLowerCase().contains(lowerQuery) || 
-          module.description.toLowerCase().contains(lowerQuery)) {
-        // Module trouvé ! On ferme la barre et on y va
-        setState(() => _isSearchOpen = false);
-        _searchController.clear();
-        context.push('/module-details', extra: module);
-        return;
-      }
-    }
-
-    // 3. Fallback : Redirection vers l'Herbier par défaut
-    setState(() => _isSearchOpen = false);
-    _searchController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Recherche pour "$query" : Redirection vers l\'Herbier...'),
-        backgroundColor: AppColors.roseDeep,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    context.push('/herbier');
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
@@ -107,43 +46,68 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const ModuleDrawer(),
       body: Stack(
         children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  _buildTopBar(),
-                  if (_isSearchOpen) _buildSearchBar(),
-                  const SizedBox(height: 24),
-                  _buildDailyTipCard(),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('Accès rapide', showViewAll: false),
-                  const SizedBox(height: 16),
-                  _buildQuickAccessList(),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader(_getRecommendedTitle(), onViewAll: () {}),
-                  const SizedBox(height: 16),
-                  _buildRecommendedPlants(),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('Services', showViewAll: false),
-                  const SizedBox(height: 16),
-                  _buildServicesSection(),
-                ],
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: _buildCurrentScreen(),
+          ),
+          if (_currentIndex == 0)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: HomeBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  if (index == 1) {
+                    context.push('/scanner');
+                  } else {
+                    setState(() => _currentIndex = index);
+                  }
+                },
               ),
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: HomeBottomNavBar(
-              currentIndex: _currentIndex,
-              onTap: (index) => setState(() => _currentIndex = index),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentScreen() {
+    if (_currentIndex == 2) {
+      return ProfileScreen(
+        key: const ValueKey('profile'),
+        onBack: () => setState(() => _currentIndex = 0),
+      );
+    }
+    // Accueil (Home) content
+    return SafeArea(
+      key: const ValueKey('home'),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
+            _buildTopBar(),
+            if (_isSearchOpen) _buildSearchBar(),
+            const SizedBox(height: 24),
+            _buildDailyTipCard(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Accès rapide', showViewAll: false),
+            const SizedBox(height: 16),
+            _buildQuickAccessList(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Plantes recommandées', onViewAll: () {}),
+            const SizedBox(height: 16),
+            _buildRecommendedPlants(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Services', showViewAll: false),
+            const SizedBox(height: 16),
+            _buildServicesSection(),
+          ],
+        ),
       ),
     );
   }
@@ -168,35 +132,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.menu, color: AppColors.textPrimary, size: 20),
           ),
         ),
-        if (!_isSearchOpen)
-          Expanded(
-            child: Column(
-              children: [
-                Text('Marhba bik 🌿',
-                    style: AppTextStyles.body(12, AppColors.textMuted,
-                        weight: FontWeight.w600)),
-                Text('Bonjour, $_firstName',
-                    style: AppTextStyles.title(22, AppColors.roseDeep),
-                    overflow: TextOverflow.ellipsis),
-              ],
-            ),
+        Expanded(
+          child: Column(
+            children: [
+              Text('Marhba bik 🌿',
+                  style: AppTextStyles.body(12, AppColors.textMuted,
+                      weight: FontWeight.w600)),
+              Text('Bonjour, $_firstName',
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.title(22, AppColors.roseDeep)),
+            ],
           ),
+        ),
         Row(
           children: [
             _buildCircleIcon(Icons.search, onTap: () {
               setState(() => _isSearchOpen = !_isSearchOpen);
             }),
             const SizedBox(width: 10),
-            NotificationBadge(
-              icon: Icons.notifications_none_outlined,
-              color: AppColors.textPrimary,
-              onTap: () => context.pushNamed('notifications'),
-            ),
-            const SizedBox(width: 10),
-            // Bouton Déconnexion (Trés important pour tes tests !)
-            _buildCircleIcon(Icons.logout, onTap: () async {
-              await AuthService.logout();
-              if (mounted) context.go('/onboarding');
+            _buildCircleIcon(Icons.notifications_none_outlined,
+                hasNotification: true, onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Aucune nouvelle notification 🔔')),
+              );
             }),
           ],
         ),
@@ -216,9 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: TextField(
-        controller: _searchController,
-        textInputAction: TextInputAction.search,
-        onSubmitted: _handleSearch,
         decoration: InputDecoration(
           hintText: 'Rechercher une plante, un article...',
           hintStyle: AppTextStyles.body(12, AppColors.textDim),
@@ -287,12 +243,15 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         children: [
           Positioned(
-            right: -10,
-            bottom: -5,
-            child: Image.asset(
-              'assets/images/femme cart.png',
-              height: 196,
-              fit: BoxFit.contain,
+            right: 0,
+            bottom: 0,
+            child: Opacity(
+              opacity: 0.8,
+              child: Image.asset(
+                'assets/images/femme_cartas.png',
+                height: 180,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           Padding(
@@ -336,7 +295,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: AppTextStyles.title(22, AppColors.roseDeep)),
+        Expanded(
+          child: Text(title, 
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.title(22, AppColors.roseDeep)),
+        ),
         if (showViewAll)
           GestureDetector(
             onTap: onViewAll,
@@ -368,12 +331,12 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.qr_code_scanner,
               label: 'Scanner',
               color: AppColors.gold,
-              onTap: () {}),
+              onTap: () => context.push('/scanner')),
           QuickActionCircle(
               icon: Icons.science,
               label: 'Phyto Lab',
               color: AppColors.lavande,
-              onTap: () => context.push('/phyto-lab')),
+              onTap: () => context.push('/lab')),
           QuickActionCircle(
               icon: Icons.chat_bubble_outline,
               label: 'Chat IA',
@@ -389,79 +352,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _getRecommendedTitle() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) return 'Plantes pour bien démarrer';
-    if (hour >= 12 && hour < 18) return 'Plantes pour l\'après-midi';
-    return 'Plantes pour une douce nuit';
-  }
-
   Widget _buildRecommendedPlants() {
-    final hour = DateTime.now().hour;
-    List<Widget> plants = [];
-
-    // Matin (5h - 12h) : Énergie
-    if (hour >= 5 && hour < 12) {
-      plants = const [
-        PlantCard(
-          name: 'Romarin',
-          arabicName: 'إكليل الجبل',
-          tag: 'Énergie & Focus',
-          imagePath: 'assets/images/plantes/fenouil.png', // Image existante
-          tagColor: AppColors.sage,
-        ),
-        PlantCard(
-          name: 'Menthe',
-          arabicName: 'نعناع',
-          tag: 'Fraîcheur Matinale',
-          imagePath: 'assets/images/plantes/mint.png',
-          tagColor: AppColors.sageTendre,
-        ),
-      ];
-    } 
-    // Après-midi (12h - 18h) : Digestion
-    else if (hour >= 12 && hour < 18) {
-      plants = const [
-        PlantCard(
-          name: 'Fenouil',
-          arabicName: 'بسباس',
-          tag: 'Digestion Légère',
-          imagePath: 'assets/images/plantes/fenouil.png',
-          tagColor: AppColors.sage,
-        ),
-        PlantCard(
-          name: 'Menthe',
-          arabicName: 'نعناع',
-          tag: 'Après-repas',
-          imagePath: 'assets/images/plantes/mint.png',
-          tagColor: AppColors.sageTendre,
-        ),
-      ];
-    } 
-    // Soir/Nuit (18h - 5h) : Sommeil et Relaxation
-    else {
-      plants = const [
-        PlantCard(
-          name: 'Lavande',
-          arabicName: 'الخُزامى',
-          tag: 'Calme & Sommeil',
-          imagePath: 'assets/images/plantes/lavande.png',
-          tagColor: AppColors.lavande,
-        ),
-        PlantCard(
-          name: 'Camomille',
-          arabicName: 'بابونج',
-          tag: 'Relaxation Profonde',
-          imagePath: 'assets/images/plantes/fenouil.png', // Réutilisation d'image
-          tagColor: AppColors.gold,
-        ),
-      ];
-    }
-
-    return SingleChildScrollView(
+    return const SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(children: plants),
+      physics: BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          PlantCard(
+            name: 'Romarin',
+            arabicName: 'إكليل الجبل',
+            tag: 'Énergie & Mémoire',
+            imagePath: 'assets/images/plantes/fenouil.png',
+            tagColor: AppColors.sage,
+          ),
+          PlantCard(
+            name: 'Lavande',
+            arabicName: 'الخُزامى',
+            tag: 'Calme & Sommeil',
+            imagePath: 'assets/images/plantes/lavande.png',
+            tagColor: AppColors.lavande,
+          ),
+          PlantCard(
+            name: 'Menthe',
+            arabicName: 'نعناع',
+            tag: 'Digestion',
+            imagePath: 'assets/images/plantes/mint.png',
+            tagColor: AppColors.sageTendre,
+          ),
+        ],
+      ),
     );
   }
 
@@ -469,25 +388,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: () => context.push('/consultation'),
-            child: _buildServiceItem(
-              'Consultation',
-              'Spécialistes',
-              Icons.medical_services_outlined,
-              AppColors.rosePale,
-              AppColors.roseVif,
-            ),
+          child: _buildServiceItem(
+            'Consultation',
+            'Spécialistes',
+            Icons.medical_services_outlined,
+            AppColors.rosePale,
+            AppColors.roseVif,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
-            onTap: () => context.push('/my-consultations'),
+            onTap: () => context.push('/shop'),
             child: _buildServiceItem(
-              'Mes RDV',
-              'Suivi des rendez-vous',
-              Icons.calendar_month_outlined,
+              'Boutique',
+              'Produits naturels',
+              Icons.shopping_bag_outlined,
               AppColors.goldPale,
               AppColors.gold,
             ),

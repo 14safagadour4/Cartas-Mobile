@@ -3,7 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Utilisation de 10.0.2.2 pour pointer vers le localhost de l'ordinateur depuis l'émulateur Android
+  // Use ngrok public URL for stable connectivity across networks
+  // URL de ton binôme (à décommenter avant de push si besoin) :
+  // static const String baseUrl = 'https://randee-nonlicentious-seducingly.ngrok-free.dev/api';
+  
+  // Ton URL locale pour l'émulateur Android :
   static const String baseUrl = 'http://10.0.2.2:8080/api';
 
   static Future<http.Response> post(
@@ -19,21 +23,7 @@ class ApiService {
         if (token != null) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode(body),
-    );
-  }
-
-  static Future<http.Response> get(String endpoint) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('accessToken');
-
-    return http.get(
-      Uri.parse('$baseUrl$endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
+    ).timeout(const Duration(seconds: 10));
   }
 
   static Future<http.Response> patch(
@@ -49,7 +39,21 @@ class ApiService {
         if (token != null) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 10));
+  }
+
+  static Future<http.Response> get(String endpoint) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    return http.get(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 10));
   }
 
   static Future<http.Response> postMultipart(
@@ -71,7 +75,7 @@ class ApiService {
           .add(await http.MultipartFile.fromPath(fileFieldName, filePath));
     }
 
-    final streamlinedResponse = await request.send();
+    final streamlinedResponse = await request.send().timeout(const Duration(seconds: 15));
     return http.Response.fromStream(streamlinedResponse);
   }
 }

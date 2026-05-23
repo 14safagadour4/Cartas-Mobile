@@ -179,55 +179,59 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 240, // Plus grand pour une image
-            height: 240,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: _getColor(index).withOpacity(0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                // On met un placeholder le temps que les images soient ajoutées
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: _getColor(index).withOpacity(0.2),
-                    child: Center(
-                      child: Text(
-                        'IMAGE\n$imagePath',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: _getColor(index), fontSize: 12),
-                      ),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 240, // Plus grand pour une image
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getColor(index).withOpacity(0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
                     ),
-                  );
-                },
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    // On met un placeholder le temps que les images soient ajoutées
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: _getColor(index).withOpacity(0.2),
+                        child: Center(
+                          child: Text(
+                            'IMAGE\n$imagePath',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: _getColor(index), fontSize: 12),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 40),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.display(28, AppColors.deepBrown, weight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(15, AppColors.textPrimary.withOpacity(0.7), weight: FontWeight.w500),
+              ),
+            ],
           ),
-          const SizedBox(height: 40),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.display(28, AppColors.deepBrown, weight: FontWeight.w800),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.body(15, AppColors.textPrimary.withOpacity(0.7), weight: FontWeight.w500),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -277,13 +281,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String _getImagePath(int index) {
     switch (index) {
       case 0:
-        return 'assets/images/plantes med.jpg'; // Ex: image de la famille en réalité augmentée
+        return 'assets/images/boutique/atelier_apothicaire.jpg'; // Ex: image de la famille en réalité augmentée
       case 1:
         return 'assets/images/CartagoBox famille exp.jpg'; // Ex: image des femmes en cercle / sororité
       case 2:
         return 'assets/images/community plantes.jpg'; // Ex: image de la grand-mère et la fille
       default:
-        return 'assets/images/plantiis designee.jpg';
+        return 'assets/images/plantiiis desginee.jpg';
     }
   }
 

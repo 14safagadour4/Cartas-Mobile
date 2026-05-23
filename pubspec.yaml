@@ -20,16 +20,12 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.2.3
   file_picker: ^8.1.4
-  table_calendar: ^3.1.2
-  fl_chart: ^0.71.0
-  intl: ^0.20.2
-  flutter_tts: ^4.1.0
-  firebase_core: ^4.7.0
-  firebase_database: ^12.3.0
-  firebase_messaging: ^16.2.0
-  flutter_local_notifications: ^20.1.0
+  image_picker: ^1.0.7
+  camera: ^0.12.0+1
+  permission_handler: ^12.0.1
   url_launcher: ^6.3.2
-  flutter_stripe: ^11.3.0
+  audioplayers: ^6.1.0
+  marquee: ^2.2.3
 
 
   # Autres dépendances si nécessaire
@@ -42,5 +38,16 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/images/royal_garden_bg.png
     - assets/images/
     - assets/images/plantes/
+    - assets/images/instructors/
+    - assets/images/map/
+    - assets/images/coloriage/
+    - assets/images/boutique/
+    - assets/images/detailles de les produit/
+    - "assets/images/forom cumm/"
+    - "assets/images/sujet populaire/"
+    - assets/images/gif/
+    - assets/images/jardin/
+    - assets/music/

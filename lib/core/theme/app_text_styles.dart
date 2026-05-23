@@ -4,22 +4,23 @@ import 'app_colors.dart';
 
 class AppTextStyles {
   // Styles pour les grands titres (Splash, Onboarding, Home Headings)
-  static TextStyle title(double size, Color color, {FontWeight weight = FontWeight.w800}) {
+  static TextStyle title(double size, Color color, {FontWeight weight = FontWeight.w800, double height = 1.2}) {
     return GoogleFonts.playfairDisplay(
       fontSize: size,
       color: color,
       fontWeight: weight,
-      height: 1.2,
+      height: height,
     );
   }
 
   // Styles pour les textes standards et descriptions
-  static TextStyle body(double size, Color color, {FontWeight weight = FontWeight.w600}) {
+  static TextStyle body(double size, Color color, {FontWeight weight = FontWeight.w600, double height = 1.4, bool italic = false}) {
     return GoogleFonts.outfit(
       fontSize: size,
       color: color,
       fontWeight: weight,
-      height: 1.4,
+      height: height,
+      fontStyle: italic ? FontStyle.italic : FontStyle.normal,
     );
   }
 
