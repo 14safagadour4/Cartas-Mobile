@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:provider/provider.dart';
 import 'package:cartas/features/specialist/providers/specialist_provider.dart';
@@ -131,7 +132,16 @@ class _SpecialistMainLayoutState extends State<SpecialistMainLayout> {
               leading: const Icon(Icons.logout, color: AppColors.roseMid),
               title: Text('Déconnexion',
                   style: AppTextStyles.body(14, AppColors.roseMid)),
-              onTap: () => context.go('/'),
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('accessToken');
+                await prefs.remove('refreshToken');
+                await prefs.remove('userId');
+                await prefs.remove('userRole');
+                if (context.mounted) {
+                  context.goNamed('actor-choice');
+                }
+              },
             ),
             const SizedBox(height: 20),
           ],
