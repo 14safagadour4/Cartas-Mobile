@@ -68,7 +68,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Herbier Digital',
                   subtitle: 'Plantes médicinales',
                   color: AppColors.sage,
-                  onTap: () => context.push('/herbier'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/herbier');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -76,7 +79,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Ma Trousse ',
                   subtitle: 'Ma pharmacie perso',
                   color: AppColors.rose,
-                  onTap: () => context.push('/trousse'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/trousse');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -84,7 +90,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Phyto Lab',
                   subtitle: 'Laboratoire virtuel',
                   color: AppColors.lavande,
-                  onTap: () => context.push('/phyto-lab'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/lab');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -92,7 +101,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Chat IA Tawhida+',
                   subtitle: 'Assistante intelligente',
                   color: AppColors.roseVif,
-                  onTap: () => context.push('/chat'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/chat');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -100,7 +112,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Forum',
                   subtitle: 'Communauté bien-être',
                   color: AppColors.gold,
-                  onTap: () {}, // Not implemented yet
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/forum');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -108,9 +123,7 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Apprendre',
                   subtitle: 'Modules éducatifs',
                   color: AppColors.sageTendre,
-                  onTap: () {
-                    context.push('/learning');
-                  },
+                  onTap: () {},
                 ),
                 _buildDrawerItem(
                   context,
@@ -118,7 +131,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Tri9 el Kenz',
                   subtitle: 'Jeu éducatif',
                   color: AppColors.goldDeep,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/treasure');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -126,7 +142,7 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Consultation',
                   subtitle: 'Spécialistes santé',
                   color: AppColors.roseMid,
-                  onTap: () => context.push('/consultation'),
+                  onTap: () {},
                 ),
                 _buildDrawerItem(
                   context,
@@ -134,7 +150,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Boutique',
                   subtitle: 'Produits naturels',
                   color: AppColors.gold,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/shop');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -142,7 +161,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Espace Rachma',
                   subtitle: 'Art-thérapie & Coloriage',
                   color: AppColors.lavandeVif,
-                  onTap: () => context.push('/arttherapy'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/arttherapy');
+                  },
                 ),
               ],
             ),

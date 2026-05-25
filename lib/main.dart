@@ -3,26 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:cartas/core/localization/language_provider.dart';
 import 'package:cartas/core/routes/app_router.dart';
-import 'package:cartas/features/specialist/providers/specialist_provider.dart';
 import 'package:cartas/features/herbier/providers/trousse_provider.dart';
 import 'package:cartas/features/herbier/providers/plant_provider.dart';
-import 'package:cartas/features/consultation/providers/consultation_provider.dart';
-import 'package:cartas/features/learning/providers/learning_provider.dart';
-import 'package:cartas/features/phyto_lab/providers/phyto_lab_provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cartas/firebase_options.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:cartas/features/art_therapy/providers/art_therapy_provider.dart';
+import 'package:cartas/features/shop/provider/cart_provider.dart';
+import 'package:cartas/features/community/providers/community_provider.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // Initialiser Stripe avec la clé publique (mode test)
-  Stripe.publishableKey = 'pk_test_51TTV4KEkzNZ3b2RgeALNM9ePD2ozWgD3imLbZvA7D45SQXuCHIodSTvspPpG3jt9mk2XOqTQ2SIA3iPcfstYKPvw00iDOmcijc';
-  
+void main() {
   runApp(const CartasApp());
 }
 
@@ -36,10 +23,9 @@ class CartasApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => TrousseProvider()),
         ChangeNotifierProvider(create: (_) => PlantProvider()..fetchPlants()),
-        ChangeNotifierProvider(create: (_) => SpecialistProvider()),
-        ChangeNotifierProvider(create: (_) => ConsultationProvider()),
-        ChangeNotifierProvider(create: (_) => LearningProvider()),
-        ChangeNotifierProvider(create: (_) => PhytoLabProvider()),
+        ChangeNotifierProvider(create: (_) => ArtTherapyProvider()..fetchAllData()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => CommunityProvider()),
       ],
       child: Consumer<LanguageProvider>(
         builder: (context, languageProvider, child) {
