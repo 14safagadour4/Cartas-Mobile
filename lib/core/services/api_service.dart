@@ -42,6 +42,36 @@ class ApiService {
     ).timeout(const Duration(seconds: 10));
   }
 
+  static Future<http.Response> put(
+      String endpoint, Map<String, dynamic> body) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    return http.put(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    ).timeout(const Duration(seconds: 10));
+  }
+
+  static Future<http.Response> delete(String endpoint) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    return http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 10));
+  }
+
   static Future<http.Response> get(String endpoint) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken');
@@ -54,6 +84,24 @@ class ApiService {
         if (token != null) 'Authorization': 'Bearer $token',
       },
     ).timeout(const Duration(seconds: 10));
+  }
+
+  /// POST with a longer timeout for heavy operations (ML analysis, etc.)
+  static Future<http.Response> postLong(
+      String endpoint, Map<String, dynamic> body,
+      {Duration timeout = const Duration(seconds: 120)}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    return http.post(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    ).timeout(timeout);
   }
 
   static Future<http.Response> postMultipart(

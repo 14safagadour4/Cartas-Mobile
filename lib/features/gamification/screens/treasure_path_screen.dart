@@ -4,6 +4,7 @@ import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'dart:ui';
 import 'package:cartas/features/home/widgets/home_bottom_nav_bar.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
 // Interactive Widgets
 import '../widgets/quiz_dialog.dart';
@@ -23,9 +24,23 @@ class _TreasurePathScreenState extends State<TreasurePathScreen> {
   bool _isQuizUnlocked = true;
   bool _isForestUnlocked = true;
   bool _isLevel13 = false;
-  int _xp = 1500;
-  int _level = 10;
+  int _xp = 0;
+  int _level = 1;
   bool _showAdventureCard = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalState();
+  }
+
+  Future<void> _loadLocalState() async {
+    final localXp = await LocalStateService.getLocalXp();
+    setState(() {
+      _xp = localXp > 0 ? localXp : 1500;
+      _level = (_xp / 100).floor();
+    });
+  }
 
   void _onQuizComplete(bool success) {
     if (success) {
@@ -33,6 +48,7 @@ class _TreasurePathScreenState extends State<TreasurePathScreen> {
         _isForestUnlocked = true;
         _xp += 100;
       });
+      LocalStateService.addLocalXp(100);
       _showSuccessSnackBar('Forêt de Cartas débloquée – Région suivante ! 🌳 (+100 XP)');
     } else {
       _showErrorSnackBar('On réessaie ! (ou consomme une gemme / un ticket)');
@@ -69,6 +85,7 @@ class _TreasurePathScreenState extends State<TreasurePathScreen> {
         _level = 13;
         _xp += 200;
       });
+      LocalStateService.addLocalXp(200);
     });
   }
 

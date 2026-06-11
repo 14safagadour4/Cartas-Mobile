@@ -5,6 +5,7 @@ import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:cartas/features/phyto_lab/providers/phyto_lab_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
 class AnalysisResultScreen extends StatefulWidget {
   const AnalysisResultScreen({super.key});
@@ -165,7 +166,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           const SizedBox(height: 30),
 
           // ── Action Buttons ──
-          _buildActionButtons(provider),
+          _buildActionButtons(provider, recipe),
         ],
       ),
     );
@@ -489,7 +490,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   }
 
   // ── Action Buttons ──
-  Widget _buildActionButtons(PhytoLabProvider provider) {
+  Widget _buildActionButtons(PhytoLabProvider provider, Map<String, dynamic> recipe) {
     return Column(
       children: [
         // Primary: Send to Specialist
@@ -526,6 +527,11 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 ? null
                 : () async {
                     bool success = await provider.saveAnalysisAsRemedy(null);
+                    // Save to local storage
+                    final recipeToSave = Map<String, dynamic>.from(recipe);
+                    recipeToSave['createdAt'] = DateTime.now().toIso8601String();
+                    await LocalStateService.saveRecipe(recipeToSave);
+
                     if (success && mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

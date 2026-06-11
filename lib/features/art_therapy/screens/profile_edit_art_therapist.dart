@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import '../services/art_therapy_service.dart';
 import '../models/art_therapy_models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileEditArtTherapist extends StatefulWidget {
   const ProfileEditArtTherapist({super.key});
@@ -37,6 +38,7 @@ class _ProfileEditArtTherapistState extends State<ProfileEditArtTherapist> {
   }
 
   Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
     try {
       final p = await _service.getProfile();
       if (mounted) {
@@ -44,16 +46,33 @@ class _ProfileEditArtTherapistState extends State<ProfileEditArtTherapist> {
           if (p != null) {
             _profile = p;
             _nameCtrl.text = '${p.firstName} ${p.lastName}';
-            _bioCtrl.text = p.bio ?? '';
-            _phoneCtrl.text = p.phone ?? '';
-            _disciplineCtrl.text = p.artDiscipline ?? '';
+            _bioCtrl.text = p.bio ?? prefs.getString('bio') ?? '';
+            _phoneCtrl.text = p.phone ?? prefs.getString('phone') ?? '';
+            _disciplineCtrl.text = p.artDiscipline ?? prefs.getString('artDiscipline') ?? '';
+          } else {
+            // Fallback to local data
+            final fn = prefs.getString('firstName') ?? '';
+            final ln = prefs.getString('lastName') ?? '';
+            _nameCtrl.text = '$fn $ln'.trim();
+            _bioCtrl.text = prefs.getString('bio') ?? '';
+            _phoneCtrl.text = prefs.getString('phone') ?? '';
+            _disciplineCtrl.text = prefs.getString('artDiscipline') ?? '';
           }
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        // Fallback to local data on error
+        final fn = prefs.getString('firstName') ?? '';
+        final ln = prefs.getString('lastName') ?? '';
+        setState(() {
+          _nameCtrl.text = '$fn $ln'.trim();
+          _bioCtrl.text = prefs.getString('bio') ?? '';
+          _phoneCtrl.text = prefs.getString('phone') ?? '';
+          _disciplineCtrl.text = prefs.getString('artDiscipline') ?? '';
+          _isLoading = false;
+        });
       }
     }
   }
@@ -113,7 +132,7 @@ class _ProfileEditArtTherapistState extends State<ProfileEditArtTherapist> {
                       child: _profile?.avatarUrl == null
                         ? Center(
                             child: Text(
-                              '${_profile?.firstName[0] ?? ''}${_profile?.lastName[0] ?? ''}',
+                              '${_profile?.firstName.isNotEmpty == true ? _profile!.firstName[0] : ''}${_profile?.lastName.isNotEmpty == true ? _profile!.lastName[0] : ''}',
                               style: AppTextStyles.display(32, bordeaux, weight: FontWeight.w800),
                             ),
                           )
@@ -159,11 +178,32 @@ class _ProfileEditArtTherapistState extends State<ProfileEditArtTherapist> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Implement update logic if needed
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profil mis à jour avec succès')),
-                    );
+                  onPressed: () async {
+                    // Save to SharedPreferences for local persistence
+                    final prefs = await SharedPreferences.getInstance();
+                    
+                    final fullName = _nameCtrl.text.trim();
+                    final parts = fullName.split(' ');
+                    final firstName = parts.isNotEmpty ? parts[0] : '';
+                    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+                    
+                    await prefs.setString('firstName', firstName);
+                    await prefs.setString('lastName', lastName);
+                    await prefs.setString('phone', _phoneCtrl.text.trim());
+                    await prefs.setString('artDiscipline', _disciplineCtrl.text.trim());
+                    await prefs.setString('bio', _bioCtrl.text.trim());
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Profil mis à jour avec succès ✅'),
+                          backgroundColor: Colors.green.shade600,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                      Navigator.pop(context, true);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: bordeaux,

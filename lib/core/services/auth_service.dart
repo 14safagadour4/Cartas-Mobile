@@ -19,6 +19,9 @@ class AuthService {
         await prefs.setString('refreshToken', data['data']['refreshToken']);
         await prefs.setString('userRole', data['data']['user']['role']);
         await prefs.setString('firstName', data['data']['user']['firstName']);
+        if (data['data']['user']['id'] != null) {
+          await prefs.setString('userId', data['data']['user']['id'].toString());
+        }
         return {'success': true, 'data': data['data']};
       } else {
         return {'success': false, 'message': data['message'] ?? 'Erreur lors de la connexion'};
@@ -67,6 +70,7 @@ class AuthService {
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
     await prefs.remove('userRole');
+    await prefs.remove('userId');
   }
 
   static Future<bool> isLoggedIn() async {

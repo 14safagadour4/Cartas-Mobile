@@ -9,6 +9,7 @@ import 'package:cartas/features/profile/screens/details/recipes_screen.dart';
 import 'package:cartas/features/profile/screens/details/history_screen.dart';
 import 'package:cartas/features/profile/screens/details/badges_screen.dart';
 import 'package:cartas/features/profile/screens/details/settings_screen.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -23,6 +24,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   String _firstName = 'Utilisatrice';
   String _lastName = '';
+  int _localXp = 0;
+  int _localFavs = 0;
+  int _localRecipes = 0;
 
   @override
   void initState() {
@@ -40,8 +44,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
     
+    await _loadLocalStateData();
     // 2. Ensuite, on appelle la base de données pour rafraîchir
     await _fetchProfile();
+  }
+
+  Future<void> _loadLocalStateData() async {
+    final xp = await LocalStateService.getLocalXp();
+    final favs = await LocalStateService.getFavorites();
+    final recipes = await LocalStateService.getRecipes();
+    if (mounted) {
+      setState(() {
+        _localXp = xp;
+        _localFavs = favs.length;
+        _localRecipes = recipes.length;
+      });
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -140,9 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildUserInfoCard() {
     final String fullName = '$_firstName $_lastName'.trim();
     final String initial = _firstName.isNotEmpty ? _firstName[0].toUpperCase() : 'U';
-    final int xp = _userProfile?['xp'] ?? 0;
-    final int favoritesCount = _userProfile?['favoritesCount'] ?? 0;
-    final int recipesCount = _userProfile?['recipesCount'] ?? 0;
+    final int xp = (_userProfile?['xp'] ?? 0) + _localXp;
+    final int favoritesCount = (_userProfile?['favoritesCount'] ?? 0) + _localFavs;
+    final int recipesCount = (_userProfile?['recipesCount'] ?? 0) + _localRecipes;
 
     return Container(
       width: double.infinity,
@@ -200,10 +218,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Passionnée de phytothérapie ',
+                'Membre Actif ',
                 style: AppTextStyles.body(13, AppColors.textMuted),
               ),
-              const Text('🌿', style: TextStyle(fontSize: 12)),
+              const Text('✨', style: TextStyle(fontSize: 12)),
             ],
           ),
           const SizedBox(height: 28),
@@ -302,9 +320,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuItems(BuildContext context) {
-    final int favoritesCount = _userProfile?['favoritesCount'] ?? 0;
-    final int recipesCount = _userProfile?['recipesCount'] ?? 0;
-    final int xp = _userProfile?['xp'] ?? 0;
+    final int favoritesCount = (_userProfile?['favoritesCount'] ?? 0) + _localFavs;
+    final int recipesCount = (_userProfile?['recipesCount'] ?? 0) + _localRecipes;
+    final int xp = (_userProfile?['xp'] ?? 0) + _localXp;
 
     return Column(
       children: [
@@ -374,6 +392,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (result == true && mounted) {
       _fetchProfile();
     }
+    // Also refresh local state after returning from a screen
+    _loadLocalStateData();
   }
 
   Widget _buildMenuItem(IconData icon, String title, {String? trailingText, VoidCallback? onTap}) {

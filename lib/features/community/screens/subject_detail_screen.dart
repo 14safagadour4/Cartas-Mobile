@@ -723,7 +723,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     String title = post['title'];
     String time = post['time'];
     String tag = post['tag'];
-    String image = post['image'] ?? 'assets/images/sujet populaire/sujet ${widget.subjectId}-${(index % 4) + 2}.png';
+    // Image counts per subject: 1→4, 2→4, 3→6, 4→5
+    final imageCounts = {'1': 4, '2': 4, '3': 6, '4': 5};
+    final maxImages = imageCounts[widget.subjectId] ?? 4;
+    final imageIndex = (index % maxImages) + 1;
+    String image = post['image'] ?? 'assets/images/sujet populaire/sujet ${widget.subjectId}-$imageIndex.png';
 
     return GestureDetector(
       onTap: () => Navigator.push(

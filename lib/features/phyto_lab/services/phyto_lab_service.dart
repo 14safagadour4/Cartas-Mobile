@@ -6,7 +6,7 @@ class PhytoLabService {
     required List<int> plantIds,
     required int goal,
   }) async {
-    final response = await ApiService.post('/phyto-lab/analyze', {
+    final response = await ApiService.postLong('/phyto-lab/analyze', {
       'plantIds': plantIds,
       'goal': goal,
     });

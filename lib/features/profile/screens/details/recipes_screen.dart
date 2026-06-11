@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:cartas/core/services/profile_service.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
 class RecipesScreen extends StatefulWidget {
   const RecipesScreen({super.key});
@@ -21,12 +22,25 @@ class _RecipesScreenState extends State<RecipesScreen> {
   }
 
   Future<void> _fetchRecipes() async {
+    final localRecipes = await LocalStateService.getRecipes();
     final result = await ProfileService.getRecipes();
+    
     if (mounted) {
       setState(() {
+        _recipes = [];
+        
+        // Local first
+        _recipes.addAll(localRecipes);
+        
+        // Remote second
         if (result['success']) {
-          _recipes = result['data'];
+          for (var rRecipe in result['data']) {
+            if (!_recipes.any((r) => r['title'] == rRecipe['title'])) {
+              _recipes.add(rRecipe);
+            }
+          }
         }
+        
         _isLoading = false;
       });
     }

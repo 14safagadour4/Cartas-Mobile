@@ -1,24 +1,21 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../models/post_model.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../../core/services/api_service.dart';
+import '../models/post_model.dart';
 import '../models/comment_model.dart';
 import '../models/active_member_model.dart';
 import '../models/topic_model.dart';
 
 class CommunityService {
-  final String baseUrl = 'http://10.0.2.2:8080/api/community';
-  final String uploadUrl = 'http://10.0.2.2:8080/api/upload';
-
   Future<List<CommunityTopic>> getTopics() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/topics'));
+      final response = await ApiService.get('/community/topics');
       if (response.statusCode == 200) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         final List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => CommunityTopic.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load topics');
+        throw Exception('Failed to load topics (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -27,17 +24,17 @@ class CommunityService {
 
   Future<List<CommunityPost>> getAllPosts({String? topic}) async {
     try {
-      String url = '$baseUrl/posts';
+      String endpoint = '/community/posts';
       if (topic != null && topic != 'Tout') {
-        url += '?topic=${Uri.encodeComponent(topic)}';
+        endpoint += '?topic=${Uri.encodeComponent(topic)}';
       }
-      final response = await http.get(Uri.parse(url));
+      final response = await ApiService.get(endpoint);
       if (response.statusCode == 200) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         final List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => CommunityPost.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load posts');
+        throw Exception('Failed to load posts (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -46,13 +43,13 @@ class CommunityService {
 
   Future<List<CommunityComment>> getComments(String postId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/$postId/comments'));
+      final response = await ApiService.get('/community/$postId/comments');
       if (response.statusCode == 200) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         final List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => CommunityComment.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load comments');
+        throw Exception('Failed to load comments (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -61,16 +58,15 @@ class CommunityService {
 
   Future<CommunityComment> addComment(String postId, CommunityComment comment) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/$postId/comments'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(comment.toJson()),
+      final response = await ApiService.post(
+        '/community/$postId/comments',
+        comment.toJson(),
       );
       if (response.statusCode == 200) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         return CommunityComment.fromJson(json.decode(decodedBody));
       } else {
-        throw Exception('Failed to add comment');
+        throw Exception('Failed to add comment (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -79,22 +75,20 @@ class CommunityService {
 
   Future<String> uploadImage(PlatformFile file) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
-      
       if (file.path != null) {
-        request.files.add(await http.MultipartFile.fromPath('file', file.path!));
-      } else if (file.bytes != null) {
-        request.files.add(http.MultipartFile.fromBytes('file', file.bytes!, filename: file.name));
+        final response = await ApiService.postMultipart(
+          '/upload',
+          {},
+          file.path!,
+          'file',
+        );
+        if (response.statusCode == 200) {
+          return response.body; // Returns the public URL of the uploaded image
+        } else {
+          throw Exception('Failed to upload image: ${response.statusCode}');
+        }
       } else {
-        throw Exception('File path and bytes are both null');
-      }
-
-      final response = await request.send();
-      if (response.statusCode == 200) {
-        final responseData = await response.stream.bytesToString();
-        return responseData; // Returns the public URL of the uploaded image
-      } else {
-        throw Exception('Failed to upload image: ${response.statusCode}');
+        throw Exception('File path is null');
       }
     } catch (e) {
       throw Exception('Network error during upload: $e');
@@ -103,16 +97,15 @@ class CommunityService {
 
   Future<CommunityPost> createPost(CommunityPost post) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/posts'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(post.toJson()),
+      final response = await ApiService.post(
+        '/community/posts',
+        post.toJson(),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         return CommunityPost.fromJson(json.decode(decodedBody));
       } else {
-        throw Exception('Failed to create post');
+        throw Exception('Failed to create post (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -121,12 +114,15 @@ class CommunityService {
 
   Future<CommunityPost> toggleLike(String postId) async {
     try {
-      final response = await http.put(Uri.parse('$baseUrl/$postId/like'));
+      final response = await ApiService.put(
+        '/community/$postId/like',
+        {},
+      );
       if (response.statusCode == 200) {
         final String decodedBody = utf8.decode(response.bodyBytes);
         return CommunityPost.fromJson(json.decode(decodedBody));
       } else {
-        throw Exception('Failed to like post');
+        throw Exception('Failed to like post (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');
@@ -135,7 +131,7 @@ class CommunityService {
 
   Future<List<ActiveMember>> getLeaderboard() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/leaderboard'));
+      final response = await ApiService.get('/community/leaderboard');
       print('Leaderboard Response Status: ${response.statusCode}');
       print('Leaderboard Response Body: ${response.body}');
       if (response.statusCode == 200) {
@@ -143,7 +139,7 @@ class CommunityService {
         final List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => ActiveMember.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load leaderboard');
+        throw Exception('Failed to load leaderboard (${response.statusCode})');
       }
     } catch (e) {
       throw Exception('Network error: $e');

@@ -29,7 +29,7 @@ class ModuleDrawer extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset('assets/images/conseil_jour.png',
+                  child: Image.asset('assets/images/femmyy.png',
                       width: 45, height: 45, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 15),
@@ -123,7 +123,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Apprendre',
                   subtitle: 'Modules éducatifs',
                   color: AppColors.sageTendre,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/learning');
+                  },
                 ),
                 _buildDrawerItem(
                   context,
@@ -142,7 +145,10 @@ class ModuleDrawer extends StatelessWidget {
                   title: 'Consultation',
                   subtitle: 'Spécialistes santé',
                   color: AppColors.roseMid,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/consultation');
+                  },
                 ),
                 _buildDrawerItem(
                   context,

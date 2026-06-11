@@ -71,7 +71,7 @@ class _ArtTherapyDrawerState extends State<ArtTherapyDrawer> {
                       child: _profile?.avatarUrl == null
                         ? Center(
                             child: Text(
-                              '${_profile?.firstName[0] ?? ''}${_profile?.lastName[0] ?? ''}',
+                              '${_profile?.firstName.isNotEmpty == true ? _profile!.firstName[0] : ''}${_profile?.lastName.isNotEmpty == true ? _profile!.lastName[0] : ''}',
                               style: AppTextStyles.display(20, textDeep, weight: FontWeight.w800),
                             ),
                           )

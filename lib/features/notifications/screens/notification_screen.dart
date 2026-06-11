@@ -139,6 +139,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         iconData = Icons.cancel_outlined;
         iconColor = Colors.red;
         break;
+      case 'remedy_validation_request':
+        iconData = Icons.assignment_turned_in_outlined;
+        iconColor = AppColors.lavande;
+        break;
       default:
         iconData = Icons.notifications_active_outlined;
         iconColor = AppColors.roseMid;
@@ -207,6 +211,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
               break;
             case 'consultation_cancelled':
               context.pushNamed('consultation-requests');
+              break;
+            case 'remedy_validation_request':
+              context.pushNamed('remedy-validation');
               break;
             default:
               break;

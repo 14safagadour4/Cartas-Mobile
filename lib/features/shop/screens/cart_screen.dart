@@ -3,9 +3,32 @@ import 'package:provider/provider.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import '../provider/cart_provider.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  int _localXp = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocalXp();
+  }
+
+  Future<void> _fetchLocalXp() async {
+    final xp = await LocalStateService.getLocalXp();
+    if (mounted) {
+      setState(() {
+        _localXp = xp;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +192,11 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCheckoutBar(BuildContext context, double total) {
+  Widget _buildCheckoutBar(BuildContext context, double originalTotal) {
+    bool hasDiscount = _localXp >= 50;
+    double discountPercentage = 0.10; // 10% discount
+    double finalTotal = hasDiscount ? originalTotal * (1 - discountPercentage) : originalTotal;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -187,11 +214,43 @@ class CartScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (hasDiscount)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.sage.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.sage.withOpacity(0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.stars, color: AppColors.sage),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Félicitations ! Vos $_localXp XP vous donnent droit à une réduction de 10% !',
+                        style: AppTextStyles.body(13, AppColors.sage, weight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (hasDiscount)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Sous-total', style: AppTextStyles.body(14, AppColors.textMuted)),
+                  Text('${originalTotal.toStringAsFixed(2)} DT', style: AppTextStyles.body(14, AppColors.textMuted).copyWith(decoration: TextDecoration.lineThrough)),
+                ],
+              ),
+            if (hasDiscount)
+              const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total', style: AppTextStyles.body(16, AppColors.textMuted)),
-                Text('${total.toStringAsFixed(2)} DT', style: AppTextStyles.title(24, AppColors.roseDeep)),
+                Text('Total', style: AppTextStyles.title(16, AppColors.textPrimary)),
+                Text('${finalTotal.toStringAsFixed(2)} DT', style: AppTextStyles.title(24, AppColors.roseDeep)),
               ],
             ),
             const SizedBox(height: 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:cartas/core/services/profile_service.dart';
+import 'package:cartas/core/services/local_state_service.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -21,12 +22,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Future<void> _fetchFavorites() async {
+    final localFavs = await LocalStateService.getFavorites();
     final result = await ProfileService.getFavorites();
+    
     if (mounted) {
       setState(() {
+        _favorites = [];
+        // Combine remote and local
         if (result['success']) {
-          _favorites = result['data'];
+          _favorites.addAll(result['data']);
         }
+        
+        // Add local favs, avoiding duplicates
+        for (var lFav in localFavs) {
+          if (!_favorites.any((f) => f['plant']?['id'] == lFav['id'])) {
+            _favorites.add({'plant': lFav});
+          }
+        }
+        
         _isLoading = false;
       });
     }

@@ -45,7 +45,6 @@ class PhytoLabProvider extends ChangeNotifier {
         goal: _getGoalInt(currentGoal),
       );
     } catch (e) {
-      print("❌ ERREUR ANALYSE PHYTO LAB : $e");
       debugPrint("Error during analysis: $e");
     } finally {
       isLoading = false;

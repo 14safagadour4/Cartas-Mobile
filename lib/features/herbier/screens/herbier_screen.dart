@@ -10,7 +10,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import 'package:provider/provider.dart';
 
 class HerbierScreen extends StatefulWidget {
-  const HerbierScreen({super.key});
+  final String? initialSearchQuery;
+  const HerbierScreen({super.key, this.initialSearchQuery});
 
   @override
   State<HerbierScreen> createState() => _HerbierScreenState();
@@ -19,6 +20,12 @@ class HerbierScreen extends StatefulWidget {
 class _HerbierScreenState extends State<HerbierScreen> {
   PlantCategory? _selectedCategory;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchQuery = widget.initialSearchQuery ?? '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +83,7 @@ class _HerbierScreenState extends State<HerbierScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: HerbierSearchBar(
+                initialValue: widget.initialSearchQuery,
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),

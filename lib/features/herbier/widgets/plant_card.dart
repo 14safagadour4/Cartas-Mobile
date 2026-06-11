@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/plant.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/services/local_state_service.dart';
 
-class PlantCard extends StatelessWidget {
+class PlantCard extends StatefulWidget {
   final Plant plant;
   final VoidCallback onTap;
 
@@ -14,9 +15,44 @@ class PlantCard extends StatelessWidget {
   });
 
   @override
+  State<PlantCard> createState() => _PlantCardState();
+}
+
+class _PlantCardState extends State<PlantCard> {
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = widget.plant.isFavorite;
+    _checkLocalFavorite();
+  }
+
+  Future<void> _checkLocalFavorite() async {
+    final isFav = await LocalStateService.isFavorite(widget.plant.name);
+    if (mounted && isFav != _isFavorite) {
+      setState(() => _isFavorite = isFav);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    setState(() => _isFavorite = !_isFavorite);
+    // Build a map compatible with favorites screen
+    final plantMap = {
+      'id': widget.plant.id,
+      'name': widget.plant.name,
+      'commonName': widget.plant.name,
+      'scientificName': widget.plant.nameLatin,
+      'imageUrl': widget.plant.imagePath,
+      'category': {'name': widget.plant.category.label.replaceAll('\n', ' ')}
+    };
+    await LocalStateService.toggleFavorite(plantMap);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -40,9 +76,8 @@ class PlantCard extends StatelessWidget {
                   const Icon(Icons.star, color: AppColors.gold, size: 14),
                   const SizedBox(width: 4),
                   Text(
-                    plant.rating.toString(),
-                    style: AppTextStyles.body(11, AppColors.textPrimary,
-                        weight: FontWeight.w700),
+                    widget.plant.rating.toString(),
+                    style: AppTextStyles.body(11, AppColors.textPrimary, weight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -50,14 +85,15 @@ class PlantCard extends StatelessWidget {
 
             // Favorite button top-right
             Positioned(
-              right: 12,
-              top: 12,
-              child: Icon(
-                plant.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: plant.isFavorite
-                    ? AppColors.roseMid
-                    : AppColors.textMuted.withOpacity(0.5),
-                size: 20,
+              right: 2,
+              top: 2,
+              child: IconButton(
+                icon: Icon(
+                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: _isFavorite ? AppColors.roseMid : AppColors.textMuted.withOpacity(0.5),
+                  size: 20,
+                ),
+                onPressed: _toggleFavorite,
               ),
             ),
 
@@ -72,10 +108,10 @@ class PlantCard extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: Image.asset(
-                        plant.imagePath,
+                        widget.plant.imagePath,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Text(
-                            plant.category.icon,
+                            widget.plant.category.icon,
                             style: const TextStyle(fontSize: 50)),
                       ),
                     ),
@@ -83,16 +119,15 @@ class PlantCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   // Name
                   Text(
-                    plant.name,
+                    widget.plant.name,
                     style: AppTextStyles.title(16, AppColors.roseDeep),
                     textAlign: TextAlign.center,
                   ),
                   // Arabic Name
                   Text(
-                    plant.nameAr,
+                    widget.plant.nameAr,
                     style: const TextStyle(
-                      fontFamily:
-                          'Amiri', // Assuming an Arabic font or fallback
+                      fontFamily: 'Amiri',
                       fontSize: 14,
                       color: AppColors.goldDeep,
                       fontWeight: FontWeight.w600,
@@ -101,25 +136,21 @@ class PlantCard extends StatelessWidget {
                   ),
                   // Latin Name
                   Text(
-                    plant.nameLatin,
-                    style: AppTextStyles.body(9, AppColors.textMuted,
-                            weight: FontWeight.w500)
-                        .copyWith(fontStyle: FontStyle.italic),
+                    widget.plant.nameLatin,
+                    style: AppTextStyles.body(9, AppColors.textMuted, weight: FontWeight.w500).copyWith(fontStyle: FontStyle.italic),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   // Category Badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.sagePale.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      plant.category.label.replaceAll('\n', ' '),
-                      style: AppTextStyles.body(8, AppColors.sage,
-                          weight: FontWeight.w700),
+                      widget.plant.category.label.replaceAll('\n', ' '),
+                      style: AppTextStyles.body(8, AppColors.sage, weight: FontWeight.w700),
                     ),
                   ),
                 ],

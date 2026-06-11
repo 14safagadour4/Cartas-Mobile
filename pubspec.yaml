@@ -26,6 +26,14 @@ dependencies:
   url_launcher: ^6.3.2
   audioplayers: ^6.1.0
   marquee: ^2.2.3
+  firebase_core: ^4.9.0
+  firebase_messaging: ^16.2.2
+  flutter_local_notifications: ^20.1.0
+  firebase_database: ^12.4.1
+  fl_chart: ^1.2.0
+  flutter_tts: ^4.2.5
+  table_calendar: ^3.2.0
+  flutter_stripe: ^12.6.0
 
 
   # Autres dépendances si nécessaire

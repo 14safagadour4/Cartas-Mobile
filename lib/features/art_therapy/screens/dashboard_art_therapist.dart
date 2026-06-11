@@ -28,7 +28,7 @@ class _DashboardArtTherapistState extends State<DashboardArtTherapist> {
 
   Future<void> _loadData() async {
     try {
-      final results = await Future.wait([
+      final results = await Future.wait<dynamic>([
         _service.getProfile(),
         _service.getDashboardStats(),
         _service.getMyWorkshops(),
@@ -108,7 +108,7 @@ class _DashboardArtTherapistState extends State<DashboardArtTherapist> {
               backgroundImage: _profile?.avatarUrl != null ? NetworkImage(_profile!.avatarUrl!) : null,
               child: _profile?.avatarUrl == null
                   ? Text(
-                      '${_profile?.firstName[0] ?? ''}${_profile?.lastName[0] ?? ''}',
+                      '${_profile?.firstName.isNotEmpty == true ? _profile!.firstName[0] : ''}${_profile?.lastName.isNotEmpty == true ? _profile!.lastName[0] : ''}',
                       style: AppTextStyles.body(14, bordeaux, weight: FontWeight.w700),
                     )
                   : null,

@@ -80,7 +80,7 @@ class _SpecialistMainLayoutState extends State<SpecialistMainLayout> {
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      'assets/images/box plantes med.jpg',
+                      'assets/images/cabine.jpg',
                       fit: BoxFit.cover,
                       color: Colors.white.withOpacity(0.3),
                       colorBlendMode: BlendMode.dstATop,

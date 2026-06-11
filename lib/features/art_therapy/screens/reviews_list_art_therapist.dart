@@ -31,7 +31,15 @@ class _ReviewsListArtTherapistState extends State<ReviewsListArtTherapist> {
       final list = await _service.getReviews();
       if (mounted) {
         setState(() {
-          _reviews = list;
+          _reviews = list.map((tr) => Review(
+            id: tr.id ?? 0,
+            userName: tr.reviewerName,
+            userInitial: tr.reviewerName.isNotEmpty ? tr.reviewerName[0] : '?',
+            workshopTitle: tr.reviewContext,
+            rating: tr.rating.toDouble(),
+            comment: tr.reviewText,
+            date: 'Récemment',
+          )).toList();
           _isLoading = false;
         });
       }

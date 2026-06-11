@@ -4,6 +4,8 @@ import 'package:cartas/core/theme/app_colors.dart';
 import 'package:cartas/core/theme/app_text_styles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+import 'package:cartas/core/localization/language_provider.dart';
 
 import '../widgets/module_drawer.dart';
 import '../widgets/plant_card.dart';
@@ -99,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             _buildQuickAccessList(),
             const SizedBox(height: 32),
-            _buildSectionHeader('Plantes recommandées', onViewAll: () {}),
+            _buildSectionHeader(context.watch<LanguageProvider>().getText('plantes_populaires'), onViewAll: () {}),
             const SizedBox(height: 16),
             _buildRecommendedPlants(),
             const SizedBox(height: 32),
@@ -135,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: Column(
             children: [
-              Text('Marhba bik 🌿',
+              Text('${context.watch<LanguageProvider>().getText('bon_retour')} 🌿',
                   style: AppTextStyles.body(12, AppColors.textMuted,
                       weight: FontWeight.w600)),
               Text('Bonjour, $_firstName',
@@ -152,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 10),
             _buildCircleIcon(Icons.notifications_none_outlined,
                 hasNotification: true, onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Aucune nouvelle notification 🔔')),
-              );
+              context.pushNamed('notifications');
             }),
           ],
         ),
@@ -175,8 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: TextField(
+        onSubmitted: (value) {
+          if (value.trim().isNotEmpty) {
+             context.push('/herbier', extra: value.trim());
+             setState(() => _isSearchOpen = false);
+          }
+        },
         decoration: InputDecoration(
-          hintText: 'Rechercher une plante, un article...',
+          hintText: context.watch<LanguageProvider>().getText('search_plant'),
           hintStyle: AppTextStyles.body(12, AppColors.textDim),
           border: InputBorder.none,
           icon: const Icon(Icons.search, color: AppColors.textMuted),
@@ -219,6 +224,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDailyTipCard() {
+    final int hour = DateTime.now().hour;
+    String tipText = '';
+    String titleText = '';
+
+    if (hour >= 5 && hour < 12) {
+      titleText = 'Conseil du Matin';
+      tipText = 'Commencez votre journée avec une infusion de romarin pour stimuler votre mémoire et votre énergie. 🌿';
+    } else if (hour >= 12 && hour < 18) {
+      titleText = 'Conseil de l\'Après-midi';
+      tipText = 'Une petite pause ? Prenez une tisane à la menthe pour faciliter la digestion et retrouver votre tonus. 🍃';
+    } else {
+      titleText = 'Conseil du Soir';
+      tipText = 'Préparez une tisane à la lavande ou à la camomille pour vous détendre et préparer un bon sommeil. 🌙';
+    }
+
     return Container(
       width: double.infinity,
       height: 180,
@@ -270,13 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text('Conseil du jour',
+                Text(titleText,
                     style: AppTextStyles.title(18, AppColors.roseDeep)),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.5,
                   child: Text(
-                    'Commencez votre journée avec une infusion de romarin pour stimuler votre mémoire et votre énergie. 🌿',
+                    tipText,
                     style: AppTextStyles.body(
                         11, AppColors.textPrimary.withOpacity(0.7),
                         weight: FontWeight.w500),
@@ -353,33 +373,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecommendedPlants() {
-    return const SingleChildScrollView(
+    final int hour = DateTime.now().hour;
+    List<Widget> plants = [];
+
+    if (hour >= 5 && hour < 12) {
+      // Matin (Énergie)
+      plants = const [
+        PlantCard(
+          name: 'Romarin',
+          arabicName: 'إكليل الجبل',
+          tag: 'Énergie & Mémoire',
+          imagePath: 'assets/images/plantes/fenouil.png',
+          tagColor: AppColors.sage,
+        ),
+        PlantCard(
+          name: 'Menthe',
+          arabicName: 'نعناع',
+          tag: 'Digestion & Tonus',
+          imagePath: 'assets/images/plantes/mint.png',
+          tagColor: AppColors.sageTendre,
+        ),
+      ];
+    } else if (hour >= 12 && hour < 18) {
+      // Après-midi (Digestion / Vitalité)
+      plants = const [
+        PlantCard(
+          name: 'Menthe',
+          arabicName: 'نعناع',
+          tag: 'Digestion',
+          imagePath: 'assets/images/plantes/mint.png',
+          tagColor: AppColors.sageTendre,
+        ),
+        PlantCard(
+          name: 'Romarin',
+          arabicName: 'إكليل الجبل',
+          tag: 'Énergie',
+          imagePath: 'assets/images/plantes/fenouil.png',
+          tagColor: AppColors.sage,
+        ),
+      ];
+    } else {
+      // Soir (Sommeil / Calme)
+      plants = const [
+        PlantCard(
+          name: 'Lavande',
+          arabicName: 'الخُزامى',
+          tag: 'Calme & Sommeil',
+          imagePath: 'assets/images/plantes/lavande.png',
+          tagColor: AppColors.lavande,
+        ),
+        PlantCard(
+          name: 'Menthe',
+          arabicName: 'نعناع',
+          tag: 'Relaxation',
+          imagePath: 'assets/images/plantes/mint.png',
+          tagColor: AppColors.sageTendre,
+        ),
+      ];
+    }
+
+    return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      physics: BouncingScrollPhysics(),
+      physics: const BouncingScrollPhysics(),
       child: Row(
-        children: [
-          PlantCard(
-            name: 'Romarin',
-            arabicName: 'إكليل الجبل',
-            tag: 'Énergie & Mémoire',
-            imagePath: 'assets/images/plantes/fenouil.png',
-            tagColor: AppColors.sage,
-          ),
-          PlantCard(
-            name: 'Lavande',
-            arabicName: 'الخُزامى',
-            tag: 'Calme & Sommeil',
-            imagePath: 'assets/images/plantes/lavande.png',
-            tagColor: AppColors.lavande,
-          ),
-          PlantCard(
-            name: 'Menthe',
-            arabicName: 'نعناع',
-            tag: 'Digestion',
-            imagePath: 'assets/images/plantes/mint.png',
-            tagColor: AppColors.sageTendre,
-          ),
-        ],
+        children: plants,
       ),
     );
   }
@@ -388,12 +445,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildServiceItem(
-            'Consultation',
-            'Spécialistes',
-            Icons.medical_services_outlined,
-            AppColors.rosePale,
-            AppColors.roseVif,
+          child: GestureDetector(
+            onTap: () => context.push('/consultation'),
+            child: _buildServiceItem(
+              'Consultation',
+              'Spécialistes',
+              Icons.medical_services_outlined,
+              AppColors.rosePale,
+              AppColors.roseVif,
+            ),
           ),
         ),
         const SizedBox(width: 12),

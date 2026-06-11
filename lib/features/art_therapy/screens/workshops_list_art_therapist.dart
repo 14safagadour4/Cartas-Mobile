@@ -358,9 +358,13 @@ class _WorkshopsListArtTherapistState extends State<WorkshopsListArtTherapist> w
               Expanded(
                 child: Row(
                   children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.display(18, bordeaux, weight: FontWeight.w800),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTextStyles.display(18, bordeaux, weight: FontWeight.w800),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Container(
@@ -710,11 +714,21 @@ class _WorkshopsListArtTherapistState extends State<WorkshopsListArtTherapist> w
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workshop créé !')));
-        _loadWorkshops();
+        
+        // Add to local list so it appears in UI during demo
+        setState(() {
+          _workshops.insert(0, newWorkshop);
+        });
+        // _loadWorkshops(); // commented out so mock doesn't overwrite our new item
+
         _titleCtrl.clear();
         _descCtrl.clear();
         _priceCtrl.clear();
         _maxPartCtrl.clear();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de la publication')));
       }
     }
   }
